@@ -1,0 +1,10 @@
+[theme]
+base = "light"
+primaryColor = "#5B8FE6"
+
+[server]
+headless = true
+runOnSave = true
+
+[browser]
+gatherUsageStats = false
