@@ -16,7 +16,7 @@ import matplotlib.pyplot as plt
 import streamlit as st
 
 
-EPS = 1e-9   # เกณฑ์การปัดเศษ/แยกกรณี
+EPS = 1e-9
 
 
 # =====================================================================
@@ -30,64 +30,207 @@ st.set_page_config(
 
 
 # =====================================================================
-# STYLES — main area dark, sidebar light, icon fonts preserved
+# THEME — CSS variables for both modes
 # =====================================================================
+DARK_VARS = """
+:root {
+    --bg-page: #1B1B1F;
+    --bg-box: #34343A;
+    --border-box: #42424A;
+    --text-primary: #E6E6E8;
+    --text-secondary: #BFBFC4;
+    --text-subtle: #9C9CA0;
+    --h1-color: #F2F2F4;
+    --section-title: #F0F0F2;
+
+    --bg-general: #26354E;
+    --border-general: #466292;
+    --bg-particular: #263921;
+    --border-particular: #527A36;
+
+    --tag-method-bg: #2C2C32;
+    --tag-method-text: #B7B7BD;
+    --tag-general-bg: #1F3252;
+    --tag-general-text: #9DBDE6;
+    --tag-particular-bg: #233D1B;
+    --tag-particular-text: #A6CD83;
+
+    --bg-case: #2D2D33;
+    --border-case: #393940;
+    --text-case: #95959B;
+    --marker-case: #5C5C62;
+    --bg-case-chosen: #2E3A4F;
+    --border-case-chosen: #5278A6;
+    --text-case-chosen: #ECEFF5;
+    --marker-case-chosen: #7AAEEC;
+
+    --divider-section: #2D2D33;
+
+    --sidebar-bg: #ECE9E1;
+    --sidebar-border: #D9D5C9;
+    --sidebar-h: #5A5854;
+    --sidebar-text: #2A2826;
+    --sidebar-caption: #6E6C66;
+
+    --btn-bg: #2C2C32;
+    --btn-text: #E6E6E8;
+    --btn-border: #3A3A40;
+    --btn-hover-bg: #3C3C42;
+    --btn-hover-border: #4E4E54;
+    --btn-disabled-bg: #1F1F23;
+    --btn-disabled-text: #5A5A60;
+    --btn-disabled-border: #28282E;
+    --btn-primary-bg: #4F7BC4;
+    --btn-primary-border: #5B8FE6;
+    --btn-primary-hover-bg: #5B8FE6;
+
+    --code-bg: #2C2C32;
+    --code-text: #E6E6E8;
+    --welcome-text: #8B8B91;
+}
+"""
+
+LIGHT_VARS = """
+:root {
+    --bg-page: #F7F6F1;
+    --bg-box: #EDE9DE;
+    --border-box: #D5D1C4;
+    --text-primary: #1F1F1F;
+    --text-secondary: #5A5854;
+    --text-subtle: #7A7872;
+    --h1-color: #1A1A1A;
+    --section-title: #1F1F1F;
+
+    --bg-general: #DDE7F4;
+    --border-general: #94B2D8;
+    --bg-particular: #E1ECD0;
+    --border-particular: #99BC68;
+
+    --tag-method-bg: #DDD9CD;
+    --tag-method-text: #4F4D48;
+    --tag-general-bg: #C0D2EB;
+    --tag-general-text: #234A78;
+    --tag-particular-bg: #C5DCA6;
+    --tag-particular-text: #3A5C18;
+
+    --bg-case: #E4E0D5;
+    --border-case: #CFCBBE;
+    --text-case: #7A7872;
+    --marker-case: #A8A39A;
+    --bg-case-chosen: #BFD3EC;
+    --border-case-chosen: #4F77A8;
+    --text-case-chosen: #1A3859;
+    --marker-case-chosen: #3D72B0;
+
+    --divider-section: #D5D1C4;
+
+    --sidebar-bg: #EFECE3;
+    --sidebar-border: #DCD8CC;
+    --sidebar-h: #5A5854;
+    --sidebar-text: #2A2826;
+    --sidebar-caption: #6E6C66;
+
+    --btn-bg: #DDD9CD;
+    --btn-text: #2A2826;
+    --btn-border: #C9C5B8;
+    --btn-hover-bg: #CCC8BB;
+    --btn-hover-border: #B0AC9F;
+    --btn-disabled-bg: #EFECE2;
+    --btn-disabled-text: #A0A099;
+    --btn-disabled-border: #DBD7CB;
+    --btn-primary-bg: #3D6FBA;
+    --btn-primary-border: #5189D8;
+    --btn-primary-hover-bg: #5189D8;
+
+    --code-bg: #DDD9CD;
+    --code-text: #2A2826;
+    --welcome-text: #6E6C66;
+}
+"""
+
+DARK_GRAPH = {
+    "fig_bg": "#34343A", "axis_bg": "#1B1B1F", "spine": "#3A3A40",
+    "tick": "#B7B7BD", "label": "#D6D6D9", "zero": "#555555",
+    "grid": "#FFFFFF", "iter": "#7AAEEC", "anal": "#E0934A",
+    "legend_bg": "#2C2C32", "legend_border": "#3A3A40",
+    "legend_text": "#E6E6E8", "grid_alpha": 0.18,
+}
+LIGHT_GRAPH = {
+    "fig_bg": "#FFFFFF", "axis_bg": "#FAF9F4", "spine": "#B0ACA0",
+    "tick": "#5A5854", "label": "#1F1F1F", "zero": "#999999",
+    "grid": "#000000", "iter": "#1B4F7A", "anal": "#C45A30",
+    "legend_bg": "#FFFFFF", "legend_border": "#D5D1C4",
+    "legend_text": "#1F1F1F", "grid_alpha": 0.10,
+}
+
+
+# ---- Theme state ----
+if "theme" not in st.session_state:
+    st.session_state.theme = "dark"
+theme = st.session_state.theme
+
+
+# =====================================================================
+# STYLES
+# =====================================================================
+THEME_BLOCK = DARK_VARS if theme == "dark" else LIGHT_VARS
+
 st.markdown(
-    """
+    f"""
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+Thai:wght@400;500;600;700&display=swap');
 
-/* ---- Fonts (do NOT use universal selector, would break icon fonts) ---- */
+{THEME_BLOCK}
+
+/* ---- Fonts (avoid universal selector — preserves Material icons) ---- */
 html, body, .stApp,
 [data-testid="stAppViewContainer"],
 [data-testid="stMain"],
-[data-testid="stSidebar"] {
+[data-testid="stSidebar"] {{
     font-family: 'Inter', 'Noto Sans Thai', -apple-system, BlinkMacSystemFont,
                  'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
-}
-button, input, textarea, select { font-family: inherit; }
+}}
+button, input, textarea, select {{ font-family: inherit; }}
 
-/* ---- Main area: dark ---- */
+/* ---- Main area ---- */
 [data-testid="stAppViewContainer"],
 [data-testid="stMain"],
-[data-testid="stHeader"] {
-    background: #1B1B1F;
-}
-[data-testid="stMain"] { color: #E6E6E8; }
+[data-testid="stHeader"] {{ background: var(--bg-page); }}
+[data-testid="stMain"] {{ color: var(--text-primary); }}
 [data-testid="stMain"] h1,
 [data-testid="stMain"] h2,
 [data-testid="stMain"] h3,
-[data-testid="stMain"] h4 { color: #F2F2F4; }
+[data-testid="stMain"] h4 {{ color: var(--h1-color); }}
 
-.block-container {
+.block-container {{
     padding-top: 2.4rem;
     padding-bottom: 4rem;
     max-width: 780px;
-}
+}}
 
-h1 {
+h1 {{
     font-size: 1.55rem !important;
     font-weight: 600 !important;
     letter-spacing: -0.015em !important;
     margin: 0 0 .35rem 0 !important;
     line-height: 1.35 !important;
-}
-.subtitle {
+}}
+.subtitle {{
     font-size: .9rem;
-    color: #9C9CA0;
+    color: var(--text-subtle);
     margin: 0 0 1.6rem 0;
     letter-spacing: .005em;
-}
+}}
 
-/* ---- KaTeX inherits text color so it shows on dark bg ---- */
+/* ---- KaTeX inherits color → readable on any theme ---- */
 [data-testid="stMain"] .katex,
-[data-testid="stMain"] .katex * { color: inherit !important; }
-[data-testid="stMain"] .katex-display { margin: .35em 0 .55em 0 !important; }
+[data-testid="stMain"] .katex * {{ color: inherit !important; }}
+[data-testid="stMain"] .katex-display {{ margin: .35em 0 .55em 0 !important; }}
 
-/* ---- Tags (small uppercase header inside each box) ---- */
-.tag {
+/* ---- Tags ---- */
+.tag {{
     display: inline-block;
     padding: 3px 10px;
     border-radius: 5px;
@@ -96,143 +239,146 @@ h1 {
     letter-spacing: .09em;
     margin: 0 0 14px 0;
     text-transform: uppercase;
-}
-.tag-method     { background: #2C2C32; color: #B7B7BD; }
-.tag-general    { background: #1F3252; color: #9DBDE6; }
-.tag-particular { background: #233D1B; color: #A6CD83; }
+}}
+.tag-method     {{ background: var(--tag-method-bg); color: var(--tag-method-text); }}
+.tag-general    {{ background: var(--tag-general-bg); color: var(--tag-general-text); }}
+.tag-particular {{ background: var(--tag-particular-bg); color: var(--tag-particular-text); }}
 
-/* ---- Section title inside method box ---- */
-.sec-title {
+/* ---- Section title ---- */
+.sec-title {{
     font-size: 1rem;
     font-weight: 600;
-    color: #F0F0F2;
+    color: var(--section-title);
     margin: 4px 0 8px 0;
     letter-spacing: .005em;
-}
-.sec-divider {
+}}
+.sec-divider {{
     margin: 22px 0 14px 0;
     border: 0;
-    border-top: 1px solid #2D2D33;
-}
+    border-top: 1px solid var(--divider-section);
+}}
 
-/* ---- Captions (the small label above each equation) ---- */
-[data-testid="stMain"] [data-testid="stCaptionContainer"] {
-    color: #ABABB1 !important;
+/* ---- Captions ---- */
+[data-testid="stMain"] [data-testid="stCaptionContainer"] {{
+    color: var(--text-secondary) !important;
     font-size: .87rem !important;
     line-height: 1.5 !important;
     margin-bottom: 2px !important;
-}
+}}
 
-/* ---- Bordered containers (st.container border=True) ---- */
-[data-testid="stMain"] [data-testid="stVerticalBlockBorderWrapper"] {
-    background: #232328;
-    border: 1px solid #2E2E34 !important;
+/* ---- Bordered containers ---- */
+[data-testid="stMain"] [data-testid="stVerticalBlockBorderWrapper"] {{
+    background: var(--bg-box);
+    border: 1px solid var(--border-box) !important;
     border-radius: 12px !important;
     padding: 18px 20px !important;
-}
+}}
+.st-key-sol-general [data-testid="stVerticalBlockBorderWrapper"] {{
+    background: var(--bg-general) !important;
+    border: 1px solid var(--border-general) !important;
+}}
+.st-key-sol-particular [data-testid="stVerticalBlockBorderWrapper"] {{
+    background: var(--bg-particular) !important;
+    border: 1px solid var(--border-particular) !important;
+}}
 
-/* Tinted backgrounds for the two solution boxes via container key */
-.st-key-sol-general [data-testid="stVerticalBlockBorderWrapper"] {
-    background: #1A2538 !important;
-    border: 1px solid #2F4D7A !important;
-}
-.st-key-sol-particular [data-testid="stVerticalBlockBorderWrapper"] {
-    background: #1B2A18 !important;
-    border: 1px solid #3F6628 !important;
-}
-
-/* ---- Case selector (the 3-row visual in section 2) ---- */
-.case-selector {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
+/* ---- Case selector ---- */
+.case-selector {{
+    display: flex; flex-direction: column; gap: 6px;
     margin: 10px 0 6px 0;
-}
-.case-row {
-    display: flex;
-    align-items: center;
-    gap: 14px;
-    padding: 9px 14px;
-    border-radius: 8px;
-    background: #20202560;
-    border: 1px solid transparent;
-    color: #76767B;
+}}
+.case-row {{
+    display: flex; align-items: center; gap: 14px;
+    padding: 9px 14px; border-radius: 8px;
+    background: var(--bg-case);
+    border: 1px solid var(--border-case);
+    color: var(--text-case);
     font-size: .92rem;
-}
-.case-row .case-marker {
-    width: 8px; height: 8px;
-    border-radius: 50%;
-    background: #4A4A50;
-    flex-shrink: 0;
-}
-.case-row .case-cond {
+}}
+.case-row .case-marker {{
+    width: 8px; height: 8px; border-radius: 50%;
+    background: var(--marker-case); flex-shrink: 0;
+}}
+.case-row .case-cond {{
     font-family: 'Cambria Math', 'Times New Roman', serif;
     font-style: italic;
-    min-width: 56px;
-    color: inherit;
-}
-.case-row .case-name { color: inherit; }
+    min-width: 56px; color: inherit;
+}}
+.case-row .case-name {{ color: inherit; }}
+.case-row.chosen {{
+    background: var(--bg-case-chosen);
+    border-color: var(--border-case-chosen);
+    color: var(--text-case-chosen);
+}}
+.case-row.chosen .case-marker {{ background: var(--marker-case-chosen); }}
 
-.case-row.chosen {
-    background: #2A3344;
-    border-color: #4A6A95;
-    color: #E6EAF2;
-}
-.case-row.chosen .case-marker { background: #6FA3E5; }
-
-/* ---- Sidebar: light, kept as control panel ---- */
-section[data-testid="stSidebar"] {
-    background: #F7F7F5;
-    border-right: 1px solid #E6E6E2;
-}
+/* ---- Sidebar ---- */
+section[data-testid="stSidebar"] {{
+    background: var(--sidebar-bg);
+    border-right: 1px solid var(--sidebar-border);
+}}
+section[data-testid="stSidebar"] [data-testid="stMarkdownContainer"] {{
+    color: var(--sidebar-text);
+}}
 section[data-testid="stSidebar"] h1,
 section[data-testid="stSidebar"] h2,
 section[data-testid="stSidebar"] h3,
-section[data-testid="stSidebar"] h4 {
+section[data-testid="stSidebar"] h4 {{
     font-size: .76rem !important;
-    color: #5A5A58 !important;
+    color: var(--sidebar-h) !important;
     text-transform: uppercase;
     letter-spacing: .08em;
     font-weight: 700 !important;
     margin: .4rem 0 .35rem 0 !important;
-}
-section[data-testid="stSidebar"] [data-testid="stCaptionContainer"] {
-    color: #6E6E6B !important;
+}}
+section[data-testid="stSidebar"] [data-testid="stCaptionContainer"] {{
+    color: var(--sidebar-caption) !important;
     font-size: .82rem !important;
-}
+}}
+
+/* Reference equation in sidebar */
+.st-key-sidebar-eq {{
+    margin-top: -.45rem;
+    margin-bottom: .35rem;
+}}
+.st-key-sidebar-eq p {{
+    font-size: .92rem;
+    line-height: 1.35;
+    color: var(--sidebar-text);
+    margin-bottom: 0 !important;
+}}
 
 /* ---- Buttons (main area) ---- */
-[data-testid="stMain"] .stButton > button {
+[data-testid="stMain"] .stButton > button {{
     font-weight: 500;
     border-radius: 8px;
     padding: .45rem .9rem;
-    background: #2C2C32;
-    color: #E6E6E8;
-    border: 1px solid #3A3A40;
-}
-[data-testid="stMain"] .stButton > button:hover:not(:disabled) {
-    background: #34343A;
-    border-color: #4A4A50;
+    background: var(--btn-bg);
+    color: var(--btn-text);
+    border: 1px solid var(--btn-border);
+}}
+[data-testid="stMain"] .stButton > button:hover:not(:disabled) {{
+    background: var(--btn-hover-bg);
+    border-color: var(--btn-hover-border);
+}}
+[data-testid="stMain"] .stButton > button:disabled {{
+    background: var(--btn-disabled-bg);
+    color: var(--btn-disabled-text);
+    border-color: var(--btn-disabled-border);
+}}
+[data-testid="stMain"] .stButton > button[kind="primary"] {{
+    background: var(--btn-primary-bg);
+    border-color: var(--btn-primary-border);
     color: #FFFFFF;
-}
-[data-testid="stMain"] .stButton > button:disabled {
-    background: #1F1F23;
-    color: #5A5A60;
-    border-color: #28282E;
-}
-[data-testid="stMain"] .stButton > button[kind="primary"] {
-    background: #4F7BC4;
-    border-color: #5B8FE6;
-    color: #FFFFFF;
-}
-[data-testid="stMain"] .stButton > button[kind="primary"]:hover:not(:disabled) {
-    background: #5B8FE6;
-}
+}}
+[data-testid="stMain"] .stButton > button[kind="primary"]:hover:not(:disabled) {{
+    background: var(--btn-primary-hover-bg);
+}}
 
 /* Hide Streamlit chrome */
-footer { visibility: hidden; }
-#MainMenu { visibility: hidden; }
-header[data-testid="stHeader"] { background: transparent; }
+footer {{ visibility: hidden; }}
+#MainMenu {{ visibility: hidden; }}
+header[data-testid="stHeader"] {{ background: transparent; }}
 </style>
 """,
     unsafe_allow_html=True,
@@ -240,11 +386,12 @@ header[data-testid="stHeader"] { background: transparent; }
 
 
 # =====================================================================
-# SOLVER
+# SOLVER  (cached for performance — repeated reruns with same input
+#          return cached dict instead of recomputing)
 # =====================================================================
+@st.cache_data(show_spinner=False, max_entries=64)
 def solve(a, b, y0, y1, has_init):
-    """แก้สมการ y(n+2) + a·y(n+1) + b·y(n) = 0
-       คืน dict ที่บรรยายราก/สัมประสิทธิ์ของคำตอบ"""
+    """แก้สมการ y(n+2) + a·y(n+1) + b·y(n) = 0"""
     disc = a * a - 4 * b
     out = {
         "a": a, "b": b, "y0": y0, "y1": y1,
@@ -283,7 +430,6 @@ def solve(a, b, y0, y1, has_init):
         if has_init:
             c1 = y0
             if abs(r) < 1e-14:
-                # รากซ้ำ = 0 เกิดเมื่อ a=b=0 ซึ่งดักไว้ที่หน้าโปรแกรมแล้ว
                 c2 = 0.0
             else:
                 c2 = y1 / r - c1
@@ -312,10 +458,9 @@ def y_iterative(a, b, y0, y1, n_max):
 
 
 # =====================================================================
-# LATEX FORMATTING HELPERS
+# LATEX HELPERS
 # =====================================================================
 def clean(x):
-    """ปัดเศษค่าที่ใกล้ศูนย์มากๆ ให้เป็น 0 (กันเลขทศนิยมเล็กจิ๋วโผล่ในผลลัพธ์)"""
     if isinstance(x, (int, np.integer)):
         return int(x)
     if abs(x) < 1e-12:
@@ -324,7 +469,6 @@ def clean(x):
 
 
 def fmt(x, decimals=4):
-    """แสดงตัวเลข: integer ถ้าใกล้จำนวนเต็ม, มิฉะนั้น %g"""
     x = clean(x)
     if isinstance(x, int):
         return str(x)
@@ -334,7 +478,6 @@ def fmt(x, decimals=4):
 
 
 def latex_term(coef, var):
-    """' + 5\\,y(n+1)' / ' - y(n+1)' / '' (สำหรับเขียนสมการต่อเนื่อง)"""
     coef = clean(coef)
     if abs(coef) < 1e-12:
         return ""
@@ -363,7 +506,6 @@ def char_eq_latex(a, b):
 
 
 def power_latex(base, var="n"):
-    """'3^{n}' หรือ '(-0.618)^{n}'"""
     s = fmt(base)
     if s.startswith("-") or "." in s:
         return f"({s})^{{{var}}}"
@@ -371,10 +513,9 @@ def power_latex(base, var="n"):
 
 
 # =====================================================================
-# CASE SELECTOR HTML  (visual highlight in section 2)
+# CASE SELECTOR HTML
 # =====================================================================
 def case_selector_html(chosen):
-    """สร้าง HTML แสดงทั้ง 3 กรณี โดยกรณีที่เลือก = ไฮไลต์"""
     rows = [
         ("real_distinct", "Δ > 0", "รากจำนวนจริงต่างกันสองค่า"),
         ("complex",       "Δ < 0", "รากเชิงซ้อนคอนจูเกต"),
@@ -395,12 +536,12 @@ def case_selector_html(chosen):
 
 
 # =====================================================================
-# BUILD ATOMS — ลำดับเนื้อหาในรูปแบบมาตรฐาน
-#   atoms ประกอบด้วย dict ที่มีคีย์ใดคีย์หนึ่ง:
-#     - "section": ชื่อหัวข้อใหญ่ (ใช้แบ่งกลุ่ม ไม่นับเป็น step)
-#     - "html":    HTML แทรกในกล่องวิธีทำ (นับเป็น step)
-#     - "label" + "latex":  ขั้นปกติ (นับเป็น step)
-#     - "solution": "general" / "particular"  → กรอบของตัวเอง (นับเป็น step)
+# BUILD ATOMS
+#   Each atom is a dict with one of these key sets:
+#     {"section": str}                        — group heading
+#     {"label": str, "html": str}             — HTML inside method box
+#     {"label": str|None, "latex": str|None}  — caption + optional LaTeX
+#     {"solution": "general"|"particular", "latex": str}  — own box
 # =====================================================================
 def build_atoms(res):
     a, b, y0, y1 = res["a"], res["b"], res["y0"], res["y1"]
@@ -410,7 +551,7 @@ def build_atoms(res):
 
     atoms = []
 
-    # ----- ส่วนที่ 1 : การแปลงสมการ -----
+    # ----- ส่วนที่ 1 -----
     atoms += [
         {"section": "ส่วนที่ 1 — การแปลงสมการ"},
         {"label": "รูปแบบมาตรฐานของสมการเชิงผลต่างอันดับสองแบบเอกพันธ์",
@@ -425,7 +566,7 @@ def build_atoms(res):
          "latex": char_eq_latex(a, b)},
     ]
 
-    # ----- ส่วนที่ 2 : แยกกรณี → คำตอบทั่วไป -----
+    # ----- ส่วนที่ 2 -----
     atoms += [
         {"section": "ส่วนที่ 2 — แยกกรณีจากค่า Discriminant"},
         {"label": r"คำนวณค่า $\Delta = a^{2} - 4b$",
@@ -440,11 +581,11 @@ def build_atoms(res):
             {"label": r"กรณีที่เลือก: ใช้สูตร $r_{1,2} = \dfrac{-a \pm \sqrt{\Delta}}{2}$",
              "latex": f"r_{{1,2}} = \\frac{{{fmt(-a)} \\pm \\sqrt{{{fmt(disc)}}}}}{{2}} "
                       f"= \\frac{{{fmt(-a)} \\pm {fmt(sqrt_d)}}}{{2}}"},
-            {"label": r"แยกหารากทั้งสอง",
+            {"label": "แยกหารากทั้งสอง",
              "latex": f"r_{{1}} = {fmt(r1)}, \\qquad r_{{2}} = {fmt(r2)}"},
             {"label": r"คำตอบมูลฐานคือ $y_{1} = r_{1}^{n}$ และ $y_{2} = r_{2}^{n}$  "
                       r"&nbsp;จึงได้คำตอบทั่วไปเป็นผลรวมเชิงเส้น",
-             "latex": "—skip—"},
+             "latex": None},
             {"solution": "general",
              "latex": f"y(n) = c_{{1}}\\,{power_latex(r1)} + c_{{2}}\\,{power_latex(r2)}"},
         ]
@@ -466,7 +607,7 @@ def build_atoms(res):
                       f"= {fmt(theta)}\\ \\text{{rad}}"},
             {"label": r"คำตอบมูลฐานคือ $\rho^{n}\cos(n\theta)$ และ $\rho^{n}\sin(n\theta)$  "
                       r"&nbsp;จึงได้คำตอบทั่วไป",
-             "latex": "—skip—"},
+             "latex": None},
             {"solution": "general",
              "latex": f"y(n) = ({fmt(rho)})^{{n}}\\,\\bigl(\\,A\\cos(n\\cdot{fmt(theta)}) "
                       f"+ B\\sin(n\\cdot{fmt(theta)})\\,\\bigr)"},
@@ -485,7 +626,7 @@ def build_atoms(res):
              "latex": f"y(n) = (c_{{1}} + c_{{2}}\\,n)\\,{power_latex(r)}"},
         ]
 
-    # ----- ส่วนที่ 3 : คำตอบเฉพาะ (เฉพาะเมื่อมีเงื่อนไขเริ่มต้น) -----
+    # ----- ส่วนที่ 3 -----
     if has_init:
         atoms.append({"section": "ส่วนที่ 3 — หาคำตอบเฉพาะจากเงื่อนไขเริ่มต้น"})
 
@@ -550,29 +691,25 @@ def build_atoms(res):
 
 
 def count_steps(atoms):
-    """นับจำนวน step (ไม่รวม section header)"""
-    return sum(1 for a in atoms if "latex" in a or "html" in a or "solution" in a)
+    return sum(1 for a in atoms if any(k in a for k in ("latex", "html", "solution")))
 
 
 # =====================================================================
 # RENDERERS
 # =====================================================================
 def render_step_item(item):
-    """ขั้นปกติ: caption + LaTeX (หรือ html ถ้าเป็น html atom)"""
     if "html" in item:
         if item.get("label"):
             st.caption(item["label"])
         st.markdown(item["html"], unsafe_allow_html=True)
         return
-
     if item.get("label"):
         st.caption(item["label"])
-    if item.get("latex") and item["latex"] != "—skip—":
+    if item.get("latex") is not None:
         st.latex(item["latex"])
 
 
 def render_method_box(groups):
-    """กล่อง 'วิธีทำ' รวม section ทั้งหมด"""
     if not any(items for _, items in groups):
         return
     with st.container(border=True):
@@ -601,10 +738,6 @@ def render_solution_box(kind, latex):
 
 
 def split_into_blocks(atoms, max_step=None):
-    """แปลง atoms เป็นลำดับ block สำหรับ render
-       block: {"type":"method", "groups":[(section_title, items),...]}
-              {"type":"solution", "kind":..., "latex":...}
-       max_step จำกัดจำนวน step ที่เปิดให้เห็น (None = ทั้งหมด)"""
     blocks = []
     cur_method = None
     cur_section = None
@@ -660,7 +793,10 @@ def render_blocks(blocks):
 # =====================================================================
 with st.sidebar:
     st.markdown("### ค่าที่ป้อน")
-    st.caption(r"$y(n{+}2) + a\,y(n{+}1) + b\,y(n) = 0$")
+    # Reference equation: plain markdown so KaTeX can render the LaTeX.
+    # (BUG FIX: previously wrapped in <div> which prevented KaTeX rendering.)
+    with st.container(key="sidebar-eq"):
+        st.markdown(r"$y(n{+}2) + a\,y(n{+}1) + b\,y(n) = 0$")
 
     col_a, col_b = st.columns(2)
     a = col_a.number_input("a", value=0.0, step=1.0, format="%g")
@@ -692,6 +828,19 @@ with st.sidebar:
     show_graph = st.checkbox("แสดงกราฟลำดับ y(n)", value=False)
     n_max = st.slider("ช่วง n", 5, 30, 15) if show_graph else 15
 
+    st.divider()
+
+    st.markdown("### ธีม")
+    is_light_choice = st.toggle(
+        "โหมดสว่าง",
+        value=(theme == "light"),
+        key="theme_widget",
+    )
+    new_theme = "light" if is_light_choice else "dark"
+    if new_theme != theme:
+        st.session_state.theme = new_theme
+        st.rerun()
+
 
 # =====================================================================
 # MAIN
@@ -702,22 +851,22 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-# ---- เงื่อนไขเริ่มทำงาน: a หรือ b ต้องไม่เป็นศูนย์ทั้งคู่ ----
+# Welcome state: when both a and b are zero, the equation is degenerate.
 should_compute = not (abs(a) < EPS and abs(b) < EPS)
 
 if not should_compute:
-    # ----- หน้าเริ่มต้น (ไม่แสดงเนื้อหาเชิงคำนวณ) -----
     st.markdown(
-        '<p style="color:#8B8B91; margin-top:1rem; font-size:.95rem;">'
-        "ป้อนค่า <code style=\"background:#2C2C32;padding:1px 6px;border-radius:4px;color:#E6E6E8;\">a</code> "
-        "และ <code style=\"background:#2C2C32;padding:1px 6px;border-radius:4px;color:#E6E6E8;\">b</code> "
-        "ที่แถบด้านข้างเพื่อเริ่มคำนวณ"
-        "</p>",
+        '<p style="color:var(--welcome-text); margin-top:1rem; font-size:.95rem;">'
+        'ป้อนค่า <code style="background:var(--code-bg); padding:1px 6px; '
+        'border-radius:4px; color:var(--code-text);">a</code> '
+        'และ <code style="background:var(--code-bg); padding:1px 6px; '
+        'border-radius:4px; color:var(--code-text);">b</code> '
+        'ที่แถบด้านข้างเพื่อเริ่มคำนวณ'
+        '</p>',
         unsafe_allow_html=True,
     )
     st.stop()
 
-# ---- คำนวณ + เตรียม atoms ----
 try:
     res = solve(a, b, y0, y1, has_init)
     atoms = build_atoms(res)
@@ -726,7 +875,7 @@ except Exception as e:  # noqa: BLE001
     st.error(f"เกิดข้อผิดพลาดในการคำนวณ: {e}")
     st.stop()
 
-# ---- session state สำหรับโหมด step-by-step ----
+# ---- session state for step-by-step ----
 if "step" not in st.session_state:
     st.session_state.step = 1
 if "last_input" not in st.session_state:
@@ -734,7 +883,6 @@ if "last_input" not in st.session_state:
 
 current_input = (a, b, y0, y1, has_init)
 if st.session_state.last_input != current_input:
-    # ค่าเปลี่ยน → รีเซ็ตขั้น
     st.session_state.step = 1
     st.session_state.last_input = current_input
 
@@ -745,7 +893,6 @@ if is_step_mode:
     blocks = split_into_blocks(atoms, max_step=cur)
     render_blocks(blocks)
 
-    # ---- ปุ่มควบคุมอยู่ใต้กรอบล่าสุด ----
     st.caption(f"ขั้นที่ {cur} จาก {total}")
     c1, c2, c3 = st.columns(3)
     if c1.button("ก่อนหน้า", disabled=(cur <= 1), use_container_width=True):
@@ -765,37 +912,39 @@ else:
 
 
 # =====================================================================
-# GRAPH + TABLE — เปรียบเทียบ iterative กับ analytical (ตรวจความถูกต้อง)
+# GRAPH + TABLE
 # =====================================================================
 if show_graph and has_init:
     st.markdown("")
     st.markdown("### กราฟลำดับ y(n)")
     st.caption("เปรียบเทียบ 2 วิธี: คำนวณซ้ำตามสมการ (iterative) กับสูตรปิดที่ได้ (analytical)")
 
+    g = DARK_GRAPH if theme == "dark" else LIGHT_GRAPH
     ns = list(range(n_max + 1))
     ys_iter = y_iterative(a, b, y0, y1, n_max)
     ys_anal = [y_analytical(res, n) for n in ns]
 
     fig, ax = plt.subplots(figsize=(8, 4))
-    fig.patch.set_facecolor("#232328")
-    ax.set_facecolor("#1B1B1F")
+    fig.patch.set_facecolor(g["fig_bg"])
+    ax.set_facecolor(g["axis_bg"])
     ax.plot(ns, ys_iter, "o-", label="iterative",
-            color="#7AAEEC", markersize=6, linewidth=1.4)
+            color=g["iter"], markersize=6, linewidth=1.4)
     ax.plot(ns, ys_anal, "x", label="analytical",
-            color="#E0934A", markersize=10, markeredgewidth=2)
-    ax.axhline(0, color="#555", linewidth=0.5)
+            color=g["anal"], markersize=10, markeredgewidth=2)
+    ax.axhline(0, color=g["zero"], linewidth=0.5)
     for spine in ax.spines.values():
-        spine.set_color("#3A3A40")
-    ax.tick_params(colors="#B7B7BD")
-    ax.xaxis.label.set_color("#D6D6D9")
-    ax.yaxis.label.set_color("#D6D6D9")
+        spine.set_color(g["spine"])
+    ax.tick_params(colors=g["tick"])
+    ax.xaxis.label.set_color(g["label"])
+    ax.yaxis.label.set_color(g["label"])
     ax.set_xlabel("n")
     ax.set_ylabel("y(n)")
-    leg = ax.legend(loc="best", framealpha=0.9, facecolor="#2C2C32",
-                    edgecolor="#3A3A40", labelcolor="#E6E6E8")
-    ax.grid(True, alpha=0.18, color="#FFFFFF")
+    ax.legend(loc="best", framealpha=0.9, facecolor=g["legend_bg"],
+              edgecolor=g["legend_border"], labelcolor=g["legend_text"])
+    ax.grid(True, alpha=g["grid_alpha"], color=g["grid"])
     fig.tight_layout()
     st.pyplot(fig, use_container_width=True)
+    plt.close(fig)  # free matplotlib resources
 
     with st.expander("ตารางค่า y(n)"):
         df = pd.DataFrame({
